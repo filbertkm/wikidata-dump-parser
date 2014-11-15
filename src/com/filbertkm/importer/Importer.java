@@ -22,7 +22,7 @@ public class Importer {
     }
 
     public void processDump() {
-        File file = new File("/Users/katie/Downloads/wikidatawiki-20131006-pages-meta-current.xml");
+        File file = new File("/Users/katie/Downloads/dumps/wikidatawiki-20140804-pages-meta-current.xml");
 
         FileInputStream fis = null;
         BufferedInputStream bis = null;
@@ -45,6 +45,9 @@ public class Importer {
                 WikiPageHandler handler = new WikiPageHandler();
 
                 saxParser.parse(is, handler);
+
+                int pageId = handler.getPageId();
+                System.out.println(pageId);
             } catch (Exception e) {
 
             }

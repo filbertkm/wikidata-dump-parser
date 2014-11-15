@@ -81,41 +81,11 @@ public class WikiPageHandler extends DefaultHandler {
 		if ((this.page != null ) && (qName == "page")) {
 
 			if (this.page.getNamespace() == 0) {
-				try {
-					if (this.conn == null) {
-						this.conn = DriverManager.getConnection(
-							"jdbc:postgresql://127.0.0.1:5432/wikidata", "katie",
-							"wikidata");
-						System.out.println(this.conn.toString());
-					}
+				this.processItem();
+			} else if (this.page.getNamespace() == 120) {
+				this.processProperty();
+			} else {
 
-					String query = "SELECT id FROM items where id = ?";
-					PreparedStatement pst = this.conn.prepareStatement(query);
-					pst.setInt(1, new Integer(this.page.getTitle().substring(1)));
-					ResultSet rs = pst.executeQuery();
-
-					if (!rs.next()) {
-						query = "INSERT INTO ites VALUES(?, ?, ?, ?, ?)";
-						pst = this.conn.prepareStatement(query);
-
-						pst.setInt(1, new Integer(this.page.getTitle().substring(1)));
-						pst.setInt(2, this.page.getId());
-						pst.setString(3, this.page.getRevision().getContent());
-						pst.setInt(4, this.page.getRevision().getId());
-
-						if ("Q".equals(this.page.getTitle().substring(0,1))) {
-							pst.setString(5, "item");
-						} else if ("q".equals(this.page.getTitle().substring(0,1))) {
-							pst.setString(5, "item");
-						} else {
-							pst.setString(5, "property");
-						}
-
-						pst.executeUpdate();
-					}
-				} catch (SQLException e) {
-					System.out.println(e.getMessage());
-				}
 			}
 
 			this.page = null;
@@ -124,5 +94,59 @@ public class WikiPageHandler extends DefaultHandler {
 		if ((this.rev != null) && (qName == "revision")) {
 			this.rev = null;
 		}
+	}
+
+	private void processItem() {
+		this.processEntity("items_20140804");
+	}
+
+	private void processProperty() {
+		this.processEntity("properties_20140804");
+	}
+
+	private void processEntity(String tableName) {
+		try {
+			if (this.conn == null) {
+				this.conn = DriverManager.getConnection(
+					"jdbc:postgresql://127.0.0.1:5432/wikidata", "katie",
+					"wikidata");
+				System.out.println(this.conn.toString());
+			}
+
+			String query = "SELECT id FROM " + tableName + " where id = ?";
+			PreparedStatement pst = this.conn.prepareStatement(query);
+			pst.setInt(1, new Integer(this.page.getTitle().substring(1)));
+			ResultSet rs = pst.executeQuery();
+
+			if (!rs.next()) {
+				query = "INSERT INTO " + tableName + " VALUES(?, ?, ?, ?, ?)";
+				pst = this.conn.prepareStatement(query);
+
+				Integer entityId = new Integer(this.page.getTitle().substring(1));
+
+				if (entityId > 0) {
+					pst.setInt(1, entityId);
+					pst.setInt(2, this.page.getId());
+					pst.setString(3, this.page.getRevision().getContent());
+					pst.setInt(4, this.page.getRevision().getId());
+
+					if ("Q".equals(this.page.getTitle().substring(0,1))) {
+							pst.setString(5, "item");
+					} else if ("q".equals(this.page.getTitle().substring(0,1))) {
+						pst.setString(5, "item");
+					} else {
+						pst.setString(5, "property");
+					}
+
+					pst.executeUpdate();
+				}
+			}
+		} catch (SQLException e) {
+			System.out.println(e.getMessage());
+		}
+	}
+
+	public int getPageId() {
+		return this.page.getId();
 	}
 }
