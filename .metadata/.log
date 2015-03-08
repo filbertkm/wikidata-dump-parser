@@ -1,0 +1,20 @@
+!SESSION 2013-08-30 23:43:36.330 -----------------------------------------------
+eclipse.buildId=I20120608-1400
+java.version=1.6.0_37
+java.vendor=Apple Inc.
+BootLoader constants: OS=macosx, ARCH=x86_64, WS=cocoa, NL=en_US
+Framework arguments:  -product org.eclipse.epp.package.mobile.product -keyring /Users/katie/.eclipse_keyring -showlocation
+Command-line arguments:  -os macosx -ws cocoa -arch x86_64 -product org.eclipse.epp.package.mobile.product -keyring /Users/katie/.eclipse_keyring -showlocation
+
+!ENTRY org.eclipse.mylyn.tasks.ui 4 0 2013-08-30 23:44:58.242
+!MESSAGE Could not load repository template extension contributed by org.eclipse.mylyn.bugzilla.ide with connectorKind bugzilla
+!SESSION 2013-08-30 23:46:18.306 -----------------------------------------------
+eclipse.buildId=I20120608-1400
+java.version=1.6.0_37
+java.vendor=Apple Inc.
+BootLoader constants: OS=macosx, ARCH=x86_64, WS=cocoa, NL=en_US
+Framework arguments:  -product org.eclipse.epp.package.mobile.product -keyring /Users/katie/.eclipse_keyring -showlocation
+Command-line arguments:  -os macosx -ws cocoa -arch x86_64 -product org.eclipse.epp.package.mobile.product -keyring /Users/katie/.eclipse_keyring -showlocation
+
+!ENTRY org.eclipse.mylyn.tasks.ui 4 0 2013-08-30 23:46:24.851
+!MESSAGE Could not load repository template extension contributed by org.eclipse.mylyn.bugzilla.ide with connectorKind bugzilla

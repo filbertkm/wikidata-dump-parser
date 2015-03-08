@@ -1,60 +1,77 @@
 package com.filbertkm.importer;
 
-import java.io.BufferedInputStream;
-import java.io.DataInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
 import java.io.IOException;
-import java.io.Reader;
-import javax.xml.parsers.SAXParser;
-import javax.xml.parsers.SAXParserFactory;
-import org.xml.sax.InputSource;
-import com.filbertkm.importer.WikiPageHandler;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+
+import org.kohsuke.args4j.CmdLineException;
+import org.kohsuke.args4j.CmdLineParser;
+import org.wikidata.wdtk.dumpfiles.DumpProcessingController;
 
 public class Importer {
+	
+	private Connection conn;
+	
+	private String dbUser;
+	
+	private String dbName;
 
-    public static void main(String[] args) {
-    	Importer importer = new Importer();
-    	importer.processDump();
+	public static void main(String[] args) {
+		Configuration config = new Configuration();
+		CmdLineParser parser = new CmdLineParser(config);
+		
+		try {
+			parser.parseArgument(args);
+			
+			Importer importer = new Importer(config.getDbUser(), config.getDbName());
+			importer.process("wikidatawiki", config.getDumpDir());
+		} catch (CmdLineException e) {
+			// omg
+			e.printStackTrace();
+		}
+		
 
-    	System.out.println("done");
-    }
+		System.out.println("done");
+	}
+	
+	public Importer(String dbUser, String dbName) {
+		this.dbUser = dbUser;
+		this.dbName = dbName;
+	}
 
-    public void processDump() {
-        File file = new File("/Users/katie/Downloads/dumps/wikidatawiki-20140804-pages-meta-current.xml");
+	public void process(String wikiId, String dumpDirectory) {
+		JsonDumpProcessor jsonDumpProcessor = new JsonDumpProcessor(getConnection());
+		JsonDumpProcessor.configureLogging();
 
-        FileInputStream fis = null;
-        BufferedInputStream bis = null;
-        DataInputStream dis = null;
+		DumpProcessingController dumpProcessingController = new DumpProcessingController(wikiId);
+		dumpProcessingController.setOfflineMode(true);
 
-        try {
-            fis = new FileInputStream(file);
-            bis = new BufferedInputStream(fis);
-            dis = new DataInputStream(bis);
+		try {
+			dumpProcessingController.setDownloadDirectory(dumpDirectory);
+			dumpProcessingController.registerEntityDocumentProcessor(jsonDumpProcessor, null, true);
+		//	dumpProcessingController.processMostRecentJsonDump();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 
-            try {
-                SAXParserFactory factory = SAXParserFactory.newInstance();
-                SAXParser saxParser = factory.newSAXParser();
-
-                Reader reader = new InputStreamReader(dis, "UTF-8");
-
-                InputSource is = new InputSource(reader);
-                is.setEncoding("UTF-8");
-
-                WikiPageHandler handler = new WikiPageHandler();
-
-                saxParser.parse(is, handler);
-
-                int pageId = handler.getPageId();
-                System.out.println(pageId);
-            } catch (Exception e) {
-
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        System.out.println("done");
-    }
+	private Connection getConnection() {
+		if (this.conn == null) {
+			try {
+				this.conn = DriverManager.getConnection(
+					"jdbc:postgresql://127.0.0.1:5432/" + this.dbName,
+					this.dbUser,
+					this.dbName
+				);
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				return null;
+			}
+		}
+		
+		return this.conn;
+	}
 }
