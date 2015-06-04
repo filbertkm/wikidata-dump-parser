@@ -29,7 +29,7 @@ public class Importer {
 			Importer importer = new Importer(config.getDbUser(), config.getDbName(), config.getDbPass());
 			importer.process("wikidatawiki", config.getDumpDir());
 		} catch (CmdLineException e) {
-			// omg
+			// omg!
 			e.printStackTrace();
 		}
 
@@ -53,7 +53,7 @@ public class Importer {
 		try {
 			dumpProcessingController.setDownloadDirectory(dumpDirectory);
 			dumpProcessingController.registerEntityDocumentProcessor(jsonDumpProcessor, null, true);
-		//	dumpProcessingController.processMostRecentJsonDump();
+			dumpProcessingController.processMostRecentJsonDump();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
