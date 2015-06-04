@@ -17,3 +17,18 @@ CREATE TABLE value_snaks(
 	entity_id VARCHAR,
 	values HSTORE
 );
+
+CREATE TABLE terms(
+	id serial PRIMARY KEY,
+	entity_id TEXT NOT NULL,
+	term_type TEXT,
+	term_language TEXT,
+	term_text TEXT
+);
+
+CREATE TABLE descriptions(
+	id serial PRIMARY KEY,
+	entity_id TEXT NOT NULL,
+	term_language TEXT,
+	term_text TEXT
+);
