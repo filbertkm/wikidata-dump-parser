@@ -34,9 +34,23 @@ psql -U username -f sql/schema.sql wikidata
 
 # Use
 
+Put dumps somewhere such as:
+
+```
+~/dumps/dumpfiles/wikidatawiki/json-20150601
+```
+
 After building a runnable jar, then the tool can be run on the command line:
 
 
 ```
 java -jar importer.jar -dbname wikidata -dbuser username -dbpass password -dumpdir /home/wikidata/dumps/
 ```
+
+Populate geometry:
+
+```
+update coordinates set geom = ST_SetSRID(ST_MakePoint(longitude, latitude), 4326);
+create index idx_coords_geom ON coordinates using GIST(geom);
+```
+
