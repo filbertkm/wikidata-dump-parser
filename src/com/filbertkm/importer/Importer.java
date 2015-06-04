@@ -17,6 +17,8 @@ public class Importer {
 
 	private String dbName;
 
+	private String dbPass;
+
 	public static void main(String[] args) {
 		Configuration config = new Configuration();
 		CmdLineParser parser = new CmdLineParser(config);
@@ -24,7 +26,7 @@ public class Importer {
 		try {
 			parser.parseArgument(args);
 
-			Importer importer = new Importer(config.getDbUser(), config.getDbName());
+			Importer importer = new Importer(config.getDbUser(), config.getDbName(), config.getDbPass());
 			importer.process("wikidatawiki", config.getDumpDir());
 		} catch (CmdLineException e) {
 			// omg
@@ -35,9 +37,10 @@ public class Importer {
 		System.out.println("done");
 	}
 
-	public Importer(String dbUser, String dbName) {
+	public Importer(String dbUser, String dbName, String dbPass) {
 		this.dbUser = dbUser;
 		this.dbName = dbName;
+		this.dbPass = dbPass;
 	}
 
 	public void process(String wikiId, String dumpDirectory) {
@@ -63,7 +66,7 @@ public class Importer {
 				this.conn = DriverManager.getConnection(
 					"jdbc:postgresql://127.0.0.1:5432/" + this.dbName,
 					this.dbUser,
-					this.dbName
+					this.dbPass
 				);
 			} catch (SQLException e) {
 				// TODO Auto-generated catch block

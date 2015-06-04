@@ -1,14 +1,11 @@
 Scripts for parsing and importing a Wikidata dump into a database (e.g. postgres).
 
-It imports the current page revisions into a table, with the following columns:
+Data extracted includes:
 
-* id (numeric entity id, integer)
-* page id (integer)
-* content (text)
-* rev id (integer)
-* entity type (text)
-
-The dump is then accessible and can then be further processed with whatever tools one likes.
+* coordinates
+* simple key => value snaks (e.g. wikibase-item or url data types)
+* labels and aliases ("terms")
+* descriptions
 
 # Requirements
 
@@ -29,15 +26,17 @@ createdb -E UTF8 -O username wikidata
 exit
 ```
 
-Set the appropriate postgresql permissions in pg_hba.conf:
-
-```
-local   all  all  md5
-```
-
-
 Then, apply the schema ([sql/schema.sql](sql/schema.sql)).
 
 ```
 psql -U username -f sql/schema.sql wikidata
+```
+
+# Use
+
+After building a runnable jar, then the tool can be run on the command line:
+
+
+```
+java -jar importer.jar -dbname wikidata -dbuser username -dbpass password -dumpdir /home/wikidata/dumps/
 ```
