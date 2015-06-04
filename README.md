@@ -9,3 +9,7 @@ It imports the current page revisions into a table, with the following columns:
 * entity type (text)
 
 The dump is then accessible and can then be further processed with whatever tools one likes.
+
+# Install
+
+Create a postgresql database and apply the schema ([sql/schema.sql](sql/schema.sql).

@@ -10,31 +10,31 @@ import org.kohsuke.args4j.CmdLineParser;
 import org.wikidata.wdtk.dumpfiles.DumpProcessingController;
 
 public class Importer {
-	
+
 	private Connection conn;
-	
+
 	private String dbUser;
-	
+
 	private String dbName;
 
 	public static void main(String[] args) {
 		Configuration config = new Configuration();
 		CmdLineParser parser = new CmdLineParser(config);
-		
+
 		try {
 			parser.parseArgument(args);
-			
+
 			Importer importer = new Importer(config.getDbUser(), config.getDbName());
 			importer.process("wikidatawiki", config.getDumpDir());
 		} catch (CmdLineException e) {
 			// omg
 			e.printStackTrace();
 		}
-		
+
 
 		System.out.println("done");
 	}
-	
+
 	public Importer(String dbUser, String dbName) {
 		this.dbUser = dbUser;
 		this.dbName = dbName;
@@ -71,7 +71,7 @@ public class Importer {
 				return null;
 			}
 		}
-		
+
 		return this.conn;
 	}
 }
