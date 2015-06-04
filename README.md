@@ -12,4 +12,4 @@ The dump is then accessible and can then be further processed with whatever tool
 
 # Install
 
-Create a postgresql database and apply the schema ([sql/schema.sql](sql/schema.sql).
+Create a postgresql database and apply the schema ([sql/schema.sql](sql/schema.sql)).

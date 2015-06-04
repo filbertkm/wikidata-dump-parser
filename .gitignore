@@ -1,1 +1,11 @@
-/target/
+# Eclipse
+.classpath
+.metadata
+.project
+.settings
+
+# Maven
+target/
+
+# Other
+bin/
