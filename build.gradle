@@ -1,0 +1,58 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'application'
+
+mainClassName = 'com.filbertkm.importer.Importer'
+
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
+
+def env = System.getenv()
+
+def cmdBranch = "git rev-parse --abbrev-ref HEAD"
+def procBranch = cmdBranch.execute()
+def gitBranch = procBranch.text.trim()
+
+def cmdVersion = "git rev-parse HEAD"
+def procVersion = cmdVersion.execute()
+def gitRevision = procVersion.text.trim()
+
+// basic setup for the script to run
+buildscript {
+
+	dependencies {
+		repositories {
+			mavenCentral()
+		}
+	}
+}
+
+jar {
+	manifest {
+		attributes("Main-Class": "${mainClassName}",
+			   "Git-Branch": ((null != gitBranch) ? gitBranch : ""),
+			   "Git-Revision": ((null != gitRevision) ? gitRevision : ""))
+	}
+	from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+}
+
+// instruct Gradle to look in mavenCentral repository first, then the /lib directory 
+repositories {
+	mavenCentral()
+	flatDir { dirs 'lib' }
+}
+
+dependencies {
+	compile "org.wikidata.wdtk:wdtk-datamodel:0.4.0"
+	compile "org.wikidata.wdtk:wdtk-dumpfiles:0.4.0"
+	compile "org.slf4j:slf4j-log4j12:1.7.6"
+        compile "args4j:args4j:2.32"
+	compile "org.postgresql:postgresql:9.3-1103-jdbc41"
+	compile "com.fasterxml.jackson.core:jackson-core:2.5.3"
+	compile "com.fasterxml.jackson.core:jackson-annotations:2.5.3"
+	compile "com.fasterxml.jackson.core:jackson-databind:2.5.3"
+}
+
+test {
+	jvmArgs "-XX:-UseSplitVerifier"
+}
