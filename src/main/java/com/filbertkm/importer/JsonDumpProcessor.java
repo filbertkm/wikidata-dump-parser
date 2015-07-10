@@ -27,7 +27,7 @@ import org.wikidata.wdtk.datamodel.interfaces.ValueSnak;
 public class JsonDumpProcessor implements EntityDocumentProcessor {
 
 	private static final Logger logger = Logger.getLogger(Importer.class);
-	
+
 	private static final String HSTORE_SEPARATOR_TOKEN = "=>";
 	
 	private Connection conn;
@@ -121,7 +121,7 @@ public class JsonDumpProcessor implements EntityDocumentProcessor {
 		ArrayList<String> snaks = new ArrayList<>();
 		
 		for (StatementGroup statementGroup : itemDocument.getStatementGroups()) {                  
-            String propertyId = statementGroup.getProperty().getId();                     
+     	String propertyId = statementGroup.getProperty().getId();                     
                 
             for (Statement statement : statementGroup.getStatements()) {                                
                 if (statement.getClaim().getMainSnak() instanceof ValueSnak) {                          
@@ -132,16 +132,18 @@ public class JsonDumpProcessor implements EntityDocumentProcessor {
                     	this.insertCoordinates(itemDocument, coordinates);
                     } else if (value instanceof EntityIdValue) {
                     	EntityIdValue entityIdValue = (EntityIdValue)value;
-                    	snaks.add(this.buildEntityIdValueSnak(propertyId, entityIdValue));
+                        insertValueSnaks(itemDocument, propertyId, entityIdValue.getId());
+//                    	snaks.add(this.buildEntityIdValueSnak(propertyId, entityIdValue));
                     } else if (value instanceof StringValue) {
                     	StringValue stringValue = (StringValue)value;
-                    	snaks.add(this.buildValueSnak(propertyId, stringValue.getString()));
+                        insertValueSnaks(itemDocument, propertyId, stringValue.getString());
+//                    	snaks.add(this.buildValueSnak(propertyId, stringValue.getString()));
                     }
                 }
             }
         }
 		
-		insertValueSnaks(itemDocument, snaks);
+		//insertValueSnaks(itemDocument, snaks);
 	}
 	
 	private void insertCoordinates(ItemDocument itemDocument, GlobeCoordinatesValue value) {
@@ -180,13 +182,14 @@ public class JsonDumpProcessor implements EntityDocumentProcessor {
 		return builder.toString();
 	}
 	
-	private void insertValueSnaks(ItemDocument itemDocument, ArrayList<String> snaks) {
-		String query = "INSERT INTO value_snaks (entity_id, values) VALUES(?,?)";
+	private void insertValueSnaks(ItemDocument itemDocument, String propertyId, String value) {
+		String query = "INSERT INTO value (entity_id, property_id, value) VALUES(?,?,?)";
 	
 		try {
 			PreparedStatement pst = this.conn.prepareStatement(query);
-			pst.setString(1, itemDocument.getEntityId().getId());			
-			pst.setObject(2, buildSnaksString(snaks), Types.OTHER);
+			pst.setString(1, itemDocument.getEntityId().getId());
+			pst.setString(2, propertyId);
+			pst.setString(3, value);
 			System.out.println(pst.toString());
 			pst.executeUpdate();
 		} catch (SQLException e) {

@@ -1,5 +1,4 @@
 CREATE EXTENSION IF NOT EXISTS postgis;
-CREATE EXTENSION IF NOT EXISTS hstore;
 
 CREATE TABLE coordinates(
 	id serial PRIMARY KEY,
@@ -12,10 +11,11 @@ CREATE TABLE coordinates(
 
 SELECT AddGeometryColumn ('public', 'coordinates', 'geom', 4326, 'POINT', 2);
 
-CREATE TABLE value_snaks(
+CREATE TABLE value(
 	id serial PRIMARY KEY,
 	entity_id VARCHAR,
-	values HSTORE
+        property_id VARCHAR,
+	value TEXT
 );
 
 CREATE TABLE terms(
