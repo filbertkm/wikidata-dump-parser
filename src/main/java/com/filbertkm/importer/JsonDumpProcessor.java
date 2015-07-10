@@ -90,8 +90,8 @@ public class JsonDumpProcessor implements EntityDocumentProcessor {
 			try {
 				PreparedStatement pst = this.conn.prepareStatement(query);
 				pst.setString(1, itemDocument.getEntityId().getId());
-				pst.setString(3, description.getValue().getLanguageCode());
-				pst.setString(4, description.getValue().getText());
+				pst.setString(2, description.getValue().getLanguageCode());
+				pst.setString(3, description.getValue().getText());
 				
 				pst.executeUpdate();
 			} catch (SQLException e) {
