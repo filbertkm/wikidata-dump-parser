@@ -31,9 +31,36 @@ public class JsonDumpProcessor implements EntityDocumentProcessor {
 	private static final String HSTORE_SEPARATOR_TOKEN = "=>";
 	
 	private Connection conn;
+
+	private PreparedStatement pstInsertDescription;
+	private PreparedStatement pstInsertTerms;
+	private PreparedStatement pstInsertCoordinates;
+	private PreparedStatement pstInsertValue;
 	
 	public JsonDumpProcessor(Connection conn) {
 		this.conn = conn;
+
+		try {
+			String queryInsertDescriptions = "INSERT INTO descriptions (entity_id, term_language, term_text)"
+					+ " VALUES(?, ?, ?)";
+			pstInsertDescription = this.conn.prepareStatement(queryInsertDescriptions);
+
+			String queryInsertTerms = "INSERT INTO terms (entity_id, term_type, term_language, term_text)"
+					+ " VALUES(?, ?, ?, ?)";
+			pstInsertTerms = this.conn.prepareStatement(queryInsertTerms);
+		
+			String queryInsertCoordinates = "INSERT INTO coordinates (entity_id, globe, precision, latitude, longitude)"
+					+ " VALUES(?, ?, ?, ?, ?)";
+			pstInsertCoordinates = this.conn.prepareStatement(queryInsertCoordinates);
+
+			String queryInsertValue = "INSERT INTO value (entity_id, property_id, value) VALUES(?,?,?)";
+			pstInsertValue = this.conn.prepareStatement(queryInsertValue);
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}	
+		
+
 	}
 
 	public void processItemDocument(ItemDocument itemDocument) {
@@ -83,17 +110,12 @@ public class JsonDumpProcessor implements EntityDocumentProcessor {
 	private void extractDescriptions(ItemDocument itemDocument) {
 		Map<String, MonolingualTextValue> descriptions = itemDocument.getDescriptions();
 		
-		String query = "INSERT INTO descriptions (entity_id, term_language, term_text)"
-				+ " VALUES(?, ?, ?)";
-		
 		for (Map.Entry<String, MonolingualTextValue> description : descriptions.entrySet()) {
 			try {
-				PreparedStatement pst = this.conn.prepareStatement(query);
-				pst.setString(1, itemDocument.getEntityId().getId());
-				pst.setString(2, description.getValue().getLanguageCode());
-				pst.setString(3, description.getValue().getText());
-				
-				pst.executeUpdate();
+				pstInsertDescription.setString(1, itemDocument.getEntityId().getId());
+				pstInsertDescription.setString(2, description.getValue().getLanguageCode());
+				pstInsertDescription.setString(3, description.getValue().getText());
+				pstInsertDescription.executeUpdate();
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}
@@ -101,17 +123,13 @@ public class JsonDumpProcessor implements EntityDocumentProcessor {
 	}
 	
 	private void addTermToDatabase(String itemId, String termType, String languageCode, String text) {
-		String query = "INSERT INTO terms (entity_id, term_type, term_language, term_text)"
-				+ " VALUES(?, ?, ?, ?)";
 		
 		try {
-			PreparedStatement pst = this.conn.prepareStatement(query);
-			pst.setString(1, itemId);
-			pst.setString(2, termType);
-			pst.setString(3, languageCode);
-			pst.setString(4, text);
-			
-			pst.executeUpdate();
+			pstInsertTerms.setString(1, itemId);
+			pstInsertTerms.setString(2, termType);
+			pstInsertTerms.setString(3, languageCode);
+			pstInsertTerms.setString(4, text);
+			pstInsertTerms.executeUpdate();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}	
@@ -147,18 +165,14 @@ public class JsonDumpProcessor implements EntityDocumentProcessor {
 	}
 	
 	private void insertCoordinates(ItemDocument itemDocument, GlobeCoordinatesValue value) {
-		String query = "INSERT INTO coordinates (entity_id, globe, precision, latitude, longitude)"
-				+ " VALUES(?, ?, ?, ?, ?)";
-		
+
 		try {
-			PreparedStatement pst = this.conn.prepareStatement(query);
-			pst.setString(1, itemDocument.getEntityId().getId());
-			pst.setString(2, value.getGlobe());
-			pst.setDouble(3, value.getPrecision());
-			pst.setDouble(4, value.getLatitude());
-			pst.setDouble(5, value.getLongitude());
-			
-			pst.executeUpdate();
+			pstInsertCoordinates.setString(1, itemDocument.getEntityId().getId());
+			pstInsertCoordinates.setString(2, value.getGlobe());
+			pstInsertCoordinates.setDouble(3, value.getPrecision());
+			pstInsertCoordinates.setDouble(4, value.getLatitude());
+			pstInsertCoordinates.setDouble(5, value.getLongitude());
+			pstInsertCoordinates.executeUpdate();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -183,15 +197,12 @@ public class JsonDumpProcessor implements EntityDocumentProcessor {
 	}
 	
 	private void insertValueSnaks(ItemDocument itemDocument, String propertyId, String value) {
-		String query = "INSERT INTO value (entity_id, property_id, value) VALUES(?,?,?)";
 	
 		try {
-			PreparedStatement pst = this.conn.prepareStatement(query);
-			pst.setString(1, itemDocument.getEntityId().getId());
-			pst.setString(2, propertyId);
-			pst.setString(3, value);
-			System.out.println(pst.toString());
-			pst.executeUpdate();
+			pstInsertValue.setString(1, itemDocument.getEntityId().getId());
+			pstInsertValue.setString(2, propertyId);
+			pstInsertValue.setString(3, value);
+			pstInsertValue.executeUpdate();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
