@@ -4,6 +4,9 @@ import org.kohsuke.args4j.Option;
 
 public class Configuration {
 
+	@Option(name = "-dbhost", usage = "database host", required = true)
+	private String dbhost;
+
 	@Option(name = "-dbuser", usage = "database user", required = true)
 	private String dbuser;
 
@@ -15,6 +18,10 @@ public class Configuration {
 
 	@Option(name = "-dumpdir", usage = "dump directory", required = true)
 	private String dumpdir;
+
+	public String getDBHost() {
+		return dbhost;
+	}
 
 	public String getDbUser() {
 		return dbuser;

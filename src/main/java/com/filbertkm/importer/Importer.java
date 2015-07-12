@@ -13,6 +13,8 @@ public class Importer {
 
 	private Connection conn;
 
+	private String dbHost;
+
 	private String dbUser;
 
 	private String dbName;
@@ -26,7 +28,7 @@ public class Importer {
 		try {
 			parser.parseArgument(args);
 
-			Importer importer = new Importer(config.getDbUser(), config.getDbName(), config.getDbPass());
+			Importer importer = new Importer(config.getDBHost(), config.getDbUser(), config.getDbName(), config.getDbPass());
 			importer.process("wikidatawiki", config.getDumpDir());
 		} catch (CmdLineException e) {
 			// omg!
@@ -37,7 +39,8 @@ public class Importer {
 		System.out.println("done");
 	}
 
-	public Importer(String dbUser, String dbName, String dbPass) {
+	public Importer(String dbHost, String dbUser, String dbName, String dbPass) {
+		this.dbHost = dbHost;
 		this.dbUser = dbUser;
 		this.dbName = dbName;
 		this.dbPass = dbPass;
@@ -64,7 +67,7 @@ public class Importer {
 		if (this.conn == null) {
 			try {
 				this.conn = DriverManager.getConnection(
-					"jdbc:postgresql://127.0.0.1:5432/" + this.dbName,
+					"jdbc:postgresql://" + this.dbHost + ":5432/" + this.dbName,
 					this.dbUser,
 					this.dbPass
 				);
