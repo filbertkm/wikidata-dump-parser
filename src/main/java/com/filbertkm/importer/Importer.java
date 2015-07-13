@@ -57,6 +57,7 @@ public class Importer {
 			dumpProcessingController.setDownloadDirectory(dumpDirectory);
 			dumpProcessingController.registerEntityDocumentProcessor(jsonDumpProcessor, null, true);
 			dumpProcessingController.processMostRecentJsonDump();
+			jsonDumpProcessor.flush();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

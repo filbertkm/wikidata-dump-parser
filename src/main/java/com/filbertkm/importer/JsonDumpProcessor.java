@@ -36,6 +36,9 @@ public class JsonDumpProcessor implements EntityDocumentProcessor {
 	private PreparedStatement pstInsertTerms;
 	private PreparedStatement pstInsertCoordinates;
 	private PreparedStatement pstInsertValue;
+
+	private int documentCount = 0;
+	private int documentBatchSize = 1000;
 	
 	public JsonDumpProcessor(Connection conn) {
 		this.conn = conn;
@@ -69,6 +72,22 @@ public class JsonDumpProcessor implements EntityDocumentProcessor {
 
 		extractTerms(itemDocument);
 		extractSnaks(itemDocument);
+
+		documentCount++;
+		if (documentCount > documentBatchSize) {
+			flush();
+		}
+	}
+
+	public void flush() {
+		try {
+			pstInsertDescription.executeBatch();
+			pstInsertTerms.executeBatch();
+			pstInsertCoordinates.executeBatch();
+			pstInsertValue.executeBatch();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	private void extractTerms(ItemDocument itemDocument) {
@@ -115,7 +134,7 @@ public class JsonDumpProcessor implements EntityDocumentProcessor {
 				pstInsertDescription.setString(1, itemDocument.getEntityId().getId());
 				pstInsertDescription.setString(2, description.getValue().getLanguageCode());
 				pstInsertDescription.setString(3, description.getValue().getText());
-				pstInsertDescription.executeUpdate();
+				pstInsertDescription.addBatch();
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}
@@ -129,7 +148,7 @@ public class JsonDumpProcessor implements EntityDocumentProcessor {
 			pstInsertTerms.setString(2, termType);
 			pstInsertTerms.setString(3, languageCode);
 			pstInsertTerms.setString(4, text);
-			pstInsertTerms.executeUpdate();
+			pstInsertTerms.addBatch();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}	
@@ -172,7 +191,7 @@ public class JsonDumpProcessor implements EntityDocumentProcessor {
 			pstInsertCoordinates.setDouble(3, value.getPrecision());
 			pstInsertCoordinates.setDouble(4, value.getLatitude());
 			pstInsertCoordinates.setDouble(5, value.getLongitude());
-			pstInsertCoordinates.executeUpdate();
+			pstInsertCoordinates.addBatch();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -202,7 +221,7 @@ public class JsonDumpProcessor implements EntityDocumentProcessor {
 			pstInsertValue.setString(1, itemDocument.getEntityId().getId());
 			pstInsertValue.setString(2, propertyId);
 			pstInsertValue.setString(3, value);
-			pstInsertValue.executeUpdate();
+			pstInsertValue.addBatch();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
