@@ -3,7 +3,6 @@ package com.filbertkm.importer;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -18,24 +17,28 @@ import org.wikidata.wdtk.datamodel.interfaces.GlobeCoordinatesValue;
 import org.wikidata.wdtk.datamodel.interfaces.ItemDocument;
 import org.wikidata.wdtk.datamodel.interfaces.MonolingualTextValue;
 import org.wikidata.wdtk.datamodel.interfaces.PropertyDocument;
+import org.wikidata.wdtk.datamodel.interfaces.SiteLink;
 import org.wikidata.wdtk.datamodel.interfaces.Statement;
 import org.wikidata.wdtk.datamodel.interfaces.StatementGroup;
 import org.wikidata.wdtk.datamodel.interfaces.StringValue;
+import org.wikidata.wdtk.datamodel.interfaces.TimeValue;
 import org.wikidata.wdtk.datamodel.interfaces.Value;
 import org.wikidata.wdtk.datamodel.interfaces.ValueSnak;
 
 public class JsonDumpProcessor implements EntityDocumentProcessor {
 
 	private static final Logger logger = Logger.getLogger(Importer.class);
-
-	private static final String HSTORE_SEPARATOR_TOKEN = "=>";
 	
 	private Connection conn;
 
+	private PreparedStatement pstInsertLabel;
+	private PreparedStatement pstInsertAlias;
 	private PreparedStatement pstInsertDescription;
-	private PreparedStatement pstInsertTerms;
-	private PreparedStatement pstInsertCoordinates;
-	private PreparedStatement pstInsertValue;
+	private PreparedStatement pstInsertSiteLink;
+	private PreparedStatement pstInsertClauseCoordinates;
+	private PreparedStatement pstInsertClauseDateTime;
+	private PreparedStatement pstInsertClauseEntity;
+	private PreparedStatement pstInsertClauseString;
 
 	private int documentCount = 0;
 	private int documentBatchSize = 1000;
@@ -44,34 +47,50 @@ public class JsonDumpProcessor implements EntityDocumentProcessor {
 		this.conn = conn;
 
 		try {
-			String queryInsertDescriptions = "INSERT INTO descriptions (entity_id, term_language, term_text)"
+			String queryInsertLabel = "INSERT INTO label (entity_id, label_language, label_text)"
+					+ " VALUES(?, ?, ?)";
+			pstInsertLabel = this.conn.prepareStatement(queryInsertLabel);
+		
+			String queryInsertAlias = "INSERT INTO alias (entity_id, alias_language, alias_text)"
+					+ " VALUES(?, ?, ?)";
+			pstInsertAlias = this.conn.prepareStatement(queryInsertAlias);
+
+			String queryInsertDescriptions = "INSERT INTO description (entity_id, description_language, description_text)"
 					+ " VALUES(?, ?, ?)";
 			pstInsertDescription = this.conn.prepareStatement(queryInsertDescriptions);
-
-			String queryInsertTerms = "INSERT INTO terms (entity_id, term_type, term_language, term_text)"
-					+ " VALUES(?, ?, ?, ?)";
-			pstInsertTerms = this.conn.prepareStatement(queryInsertTerms);
 		
-			String queryInsertCoordinates = "INSERT INTO coordinates (entity_id, globe, precision, latitude, longitude)"
-					+ " VALUES(?, ?, ?, ?, ?)";
-			pstInsertCoordinates = this.conn.prepareStatement(queryInsertCoordinates);
+			String queryInsertSiteLink = "INSERT INTO sitelink (entity_id, site_key, page_title)"
+					+ " VALUES(?, ?, ?)";
+			pstInsertSiteLink = this.conn.prepareStatement(queryInsertSiteLink);
+		
+			String queryInsertClauseCoordinates = "INSERT INTO claim_coordinate (entity_id, property_id, globe, precision, latitude, longitude)"
+					+ " VALUES(?, ?, ?, ?, ?, ?)";
+			pstInsertClauseCoordinates = this.conn.prepareStatement(queryInsertClauseCoordinates);
 
-			String queryInsertValue = "INSERT INTO value (entity_id, property_id, value) VALUES(?,?,?)";
-			pstInsertValue = this.conn.prepareStatement(queryInsertValue);
+			String queryInsertClauseDateTime = "INSERT INTO claim_datetime (entity_id, property_id, calendar, year, month, day, hour, minute, second, precision, tolerance_before, tolerance_after)"
+					+ " VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+			pstInsertClauseDateTime = this.conn.prepareStatement(queryInsertClauseDateTime);
+
+			String queryInsertClauseEntity = "INSERT INTO claim_entity (entity_id, property_id, value) VALUES (?,?,?)";
+			pstInsertClauseEntity = this.conn.prepareStatement(queryInsertClauseEntity);
+
+			String queryInsertClauseString = "INSERT INTO claim_string (entity_id, property_id, value) VALUES (?,?,?)";
+			pstInsertClauseString = this.conn.prepareStatement(queryInsertClauseString);
 
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}	
-		
-
 	}
 
 	public void processItemDocument(ItemDocument itemDocument) {
 		String itemId = itemDocument.getEntityId().getId();
 		logger.info("Processing: " + itemId);
-
-		extractTerms(itemDocument);
-		extractSnaks(itemDocument);
+		
+		extractLabels(itemDocument);
+		extractAliases(itemDocument);
+		extractDescriptions(itemDocument);
+		extractSiteLinks(itemDocument);
+		extractClaims(itemDocument);
 
 		documentCount++;
 		if (documentCount > documentBatchSize) {
@@ -81,31 +100,31 @@ public class JsonDumpProcessor implements EntityDocumentProcessor {
 
 	public void flush() {
 		try {
+			pstInsertLabel.executeBatch();
+			pstInsertAlias.executeBatch();
 			pstInsertDescription.executeBatch();
-			pstInsertTerms.executeBatch();
-			pstInsertCoordinates.executeBatch();
-			pstInsertValue.executeBatch();
+			pstInsertSiteLink.executeBatch();
+			pstInsertClauseCoordinates.executeBatch();
+			pstInsertClauseDateTime.executeBatch();
+			pstInsertClauseEntity.executeBatch();
+			pstInsertClauseString.executeBatch();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 	}
-	
-	private void extractTerms(ItemDocument itemDocument) {
-		extractLabels(itemDocument);
-		extractAliases(itemDocument);
-		extractDescriptions(itemDocument);
-	}
-	
+		
 	private void extractLabels(ItemDocument itemDocument) {	
 		Map<String, MonolingualTextValue> labels = itemDocument.getLabels();
 		
 		for (Map.Entry<String, MonolingualTextValue> label : labels.entrySet()) {
-			addTermToDatabase(
-				itemDocument.getEntityId().getId(),
-				"label",
-				label.getValue().getLanguageCode(),
-				label.getValue().getText()
-			);		
+			try {
+				pstInsertLabel.setString(1, itemDocument.getEntityId().getId());
+				pstInsertLabel.setString(2, label.getValue().getLanguageCode());
+				pstInsertLabel.setString(3, label.getValue().getText());
+				pstInsertLabel.addBatch();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 	
@@ -116,12 +135,15 @@ public class JsonDumpProcessor implements EntityDocumentProcessor {
 			List<MonolingualTextValue> languageAliases = aliasMap.getValue();
 			
 			for (MonolingualTextValue alias : languageAliases) {
-				addTermToDatabase(
-					itemDocument.getEntityId().getId(),
-					"alias",
-					alias.getLanguageCode(),
-					alias.getText()
-				);
+				
+				try {
+					pstInsertAlias.setString(1, itemDocument.getEntityId().getId());
+					pstInsertAlias.setString(2, alias.getLanguageCode());
+					pstInsertAlias.setString(3, alias.getText());
+					pstInsertAlias.addBatch();
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
 			}
 		}
 	}
@@ -140,25 +162,27 @@ public class JsonDumpProcessor implements EntityDocumentProcessor {
 			}
 		}
 	}
-	
-	private void addTermToDatabase(String itemId, String termType, String languageCode, String text) {
-		
-		try {
-			pstInsertTerms.setString(1, itemId);
-			pstInsertTerms.setString(2, termType);
-			pstInsertTerms.setString(3, languageCode);
-			pstInsertTerms.setString(4, text);
-			pstInsertTerms.addBatch();
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}	
-	}
 
-	private void extractSnaks(ItemDocument itemDocument) {
-		ArrayList<String> snaks = new ArrayList<>();
+	private void extractSiteLinks(ItemDocument itemDocument) {
+		Map<String, SiteLink> sitelinks = itemDocument.getSiteLinks();
 		
+		for (Map.Entry<String, SiteLink> sitelink : sitelinks.entrySet()) {
+			try {
+				pstInsertSiteLink.setString(1, itemDocument.getEntityId().getId());
+				pstInsertSiteLink.setString(2, sitelink.getValue().getSiteKey());
+				pstInsertSiteLink.setString(3, sitelink.getValue().getPageTitle());
+				// getBadges
+				pstInsertSiteLink.addBatch();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	private void extractClaims(ItemDocument itemDocument) {
+
 		for (StatementGroup statementGroup : itemDocument.getStatementGroups()) {                  
-     	String propertyId = statementGroup.getProperty().getId();                     
+			String propertyId = statementGroup.getProperty().getId();                     
                 
             for (Statement statement : statementGroup.getStatements()) {                                
                 if (statement.getClaim().getMainSnak() instanceof ValueSnak) {                          
@@ -166,79 +190,79 @@ public class JsonDumpProcessor implements EntityDocumentProcessor {
                     
                     if (value instanceof GlobeCoordinatesValue) {
                     	GlobeCoordinatesValue coordinates = (GlobeCoordinatesValue)value;
-                    	this.insertCoordinates(itemDocument, coordinates);
+                    	insertCoordinates(itemDocument, propertyId, coordinates);
+                    } else if (value instanceof TimeValue) {
+                    	TimeValue timeValue = (TimeValue)value;
+                    	insertDateTime(itemDocument, propertyId, timeValue);
                     } else if (value instanceof EntityIdValue) {
                     	EntityIdValue entityIdValue = (EntityIdValue)value;
-                        insertValueSnaks(itemDocument, propertyId, entityIdValue.getId());
-//                    	snaks.add(this.buildEntityIdValueSnak(propertyId, entityIdValue));
+                        insertEntity(itemDocument, propertyId, entityIdValue.getId());
                     } else if (value instanceof StringValue) {
                     	StringValue stringValue = (StringValue)value;
-                        insertValueSnaks(itemDocument, propertyId, stringValue.getString());
-//                    	snaks.add(this.buildValueSnak(propertyId, stringValue.getString()));
+                    	insertString(itemDocument, propertyId, stringValue.getString());
                     }
                 }
             }
         }
-		
-		//insertValueSnaks(itemDocument, snaks);
 	}
 	
-	private void insertCoordinates(ItemDocument itemDocument, GlobeCoordinatesValue value) {
+	private void insertCoordinates(ItemDocument itemDocument, String propertyId, GlobeCoordinatesValue value) {
 
 		try {
-			pstInsertCoordinates.setString(1, itemDocument.getEntityId().getId());
-			pstInsertCoordinates.setString(2, value.getGlobe());
-			pstInsertCoordinates.setDouble(3, value.getPrecision());
-			pstInsertCoordinates.setDouble(4, value.getLatitude());
-			pstInsertCoordinates.setDouble(5, value.getLongitude());
-			pstInsertCoordinates.addBatch();
+			pstInsertClauseCoordinates.setString(1, itemDocument.getEntityId().getId());
+			pstInsertClauseCoordinates.setString(2, propertyId);
+			pstInsertClauseCoordinates.setString(3, value.getGlobe());
+			pstInsertClauseCoordinates.setDouble(4, value.getPrecision());
+			pstInsertClauseCoordinates.setDouble(5, value.getLatitude());
+			pstInsertClauseCoordinates.setDouble(6, value.getLongitude());
+			pstInsertClauseCoordinates.addBatch();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 	}
 	
-	private String buildEntityIdValueSnak(String propertyId, EntityIdValue value) {
-		return this.buildValueSnak(
-			propertyId,
-			value.getId()
-		);
-	}
-		
-	private String buildValueSnak(String propertyId, String value) {
-		final StringBuilder builder = new StringBuilder();
-		builder.append(propertyId);
-		builder.append(HSTORE_SEPARATOR_TOKEN);
-		builder.append("\"");
-		builder.append(value);
-		builder.append("\"");
-		
-		return builder.toString();
-	}
-	
-	private void insertValueSnaks(ItemDocument itemDocument, String propertyId, String value) {
-	
+	private void insertDateTime(ItemDocument itemDocument, String propertyId, TimeValue value) {
 		try {
-			pstInsertValue.setString(1, itemDocument.getEntityId().getId());
-			pstInsertValue.setString(2, propertyId);
-			pstInsertValue.setString(3, value);
-			pstInsertValue.addBatch();
+			pstInsertClauseDateTime.setString(1, itemDocument.getEntityId().getId());
+			pstInsertClauseDateTime.setString(2, propertyId);
+			pstInsertClauseDateTime.setString(3, value.getPreferredCalendarModel());
+			pstInsertClauseDateTime.setDouble(4, value.getYear());
+			pstInsertClauseDateTime.setDouble(5, value.getMonth());
+			pstInsertClauseDateTime.setDouble(6, value.getDay());
+			pstInsertClauseDateTime.setDouble(7, value.getHour());
+			pstInsertClauseDateTime.setDouble(8, value.getMinute());
+			pstInsertClauseDateTime.setDouble(9, value.getSecond());
+			pstInsertClauseDateTime.setDouble(10, value.getPrecision());
+			pstInsertClauseDateTime.setDouble(11, value.getBeforeTolerance());
+			pstInsertClauseDateTime.setDouble(12, value.getAfterTolerance());
+			pstInsertClauseDateTime.addBatch();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 	}
 	
-	private String buildSnaksString(ArrayList<String> snaks) {
-		String snakString = "";
+	private void insertString(ItemDocument itemDocument, String propertyId, String value) {
 		
-		for (int i = 0; i < snaks.size() - 1; i++) {
-			if ( i == 0 ) {
-				snakString = snakString + snaks.get(i);
-			} else {
-				snakString = snakString + ", " + snaks.get(i);
-			}
+		try {
+			pstInsertClauseString.setString(1, itemDocument.getEntityId().getId());
+			pstInsertClauseString.setString(2, propertyId);
+			pstInsertClauseString.setString(3, value);
+			pstInsertClauseString.addBatch();
+		} catch (SQLException e) {
+			e.printStackTrace();
 		}
+	}
+	
+	private void insertEntity(ItemDocument itemDocument, String propertyId, String value) {
 		
-		return snakString;
+		try {
+			pstInsertClauseEntity.setString(1, itemDocument.getEntityId().getId());
+			pstInsertClauseEntity.setString(2, propertyId);
+			pstInsertClauseEntity.setString(3, value);
+			pstInsertClauseEntity.addBatch();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	public void processPropertyDocument(PropertyDocument arg0) {
