@@ -36,3 +36,14 @@ CREATE TABLE descriptions(
 	term_language TEXT,
 	term_text TEXT
 );
+
+CREATE TABLE properties(
+	id serial PRIMARY KEY,
+	entity_id TEXT NOT NULL,
+	term_type TEXT,
+	term_language TEXT,
+	term_text TEXT,
+	data_type TEXT
+);
+
+CREATE INDEX on properties(entity_id);
