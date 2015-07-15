@@ -18,6 +18,8 @@ CREATE TABLE value_snaks(
 	values HSTORE
 );
 
+CREATE INDEX on value_snaks(entity_id);
+
 CREATE TABLE terms(
 	id serial PRIMARY KEY,
 	entity_id TEXT NOT NULL,
@@ -25,6 +27,8 @@ CREATE TABLE terms(
 	term_language TEXT,
 	term_text TEXT
 );
+
+CREATE INDEX on terms(entity_id);
 
 CREATE TABLE descriptions(
 	id serial PRIMARY KEY,
