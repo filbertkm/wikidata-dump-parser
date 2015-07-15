@@ -3,7 +3,6 @@ package com.filbertkm.importer;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -19,8 +18,10 @@ import org.wikidata.wdtk.datamodel.interfaces.MonolingualTextValue;
 import org.wikidata.wdtk.datamodel.interfaces.PropertyDocument;
 import org.wikidata.wdtk.datamodel.interfaces.SiteLink;
 import org.wikidata.wdtk.datamodel.interfaces.Statement;
+import org.wikidata.wdtk.datamodel.interfaces.StatementDocument;
 import org.wikidata.wdtk.datamodel.interfaces.StatementGroup;
 import org.wikidata.wdtk.datamodel.interfaces.StringValue;
+import org.wikidata.wdtk.datamodel.interfaces.TermedDocument;
 import org.wikidata.wdtk.datamodel.interfaces.TimeValue;
 import org.wikidata.wdtk.datamodel.interfaces.Value;
 import org.wikidata.wdtk.datamodel.interfaces.ValueSnak;
@@ -98,6 +99,18 @@ public class JsonDumpProcessor implements EntityDocumentProcessor {
 		}
 	}
 
+	public void processPropertyDocument(PropertyDocument propertyDoc) {
+		extractLabels(propertyDoc);
+		extractAliases(propertyDoc);
+		extractDescriptions(propertyDoc);
+		extractClaims(propertyDoc);
+
+		documentCount++;
+		if (documentCount > documentBatchSize) {
+			flush();
+		}
+	}
+
 	public void flush() {
 		try {
 			pstInsertLabel.executeBatch();
@@ -113,7 +126,7 @@ public class JsonDumpProcessor implements EntityDocumentProcessor {
 		}
 	}
 		
-	private void extractLabels(ItemDocument itemDocument) {	
+	private void extractLabels(TermedDocument itemDocument) {	
 		Map<String, MonolingualTextValue> labels = itemDocument.getLabels();
 		
 		for (Map.Entry<String, MonolingualTextValue> label : labels.entrySet()) {
@@ -128,7 +141,7 @@ public class JsonDumpProcessor implements EntityDocumentProcessor {
 		}
 	}
 	
-	private void extractAliases(ItemDocument itemDocument) {
+	private void extractAliases(TermedDocument itemDocument) {
 		Map<String, List<MonolingualTextValue>> aliases = itemDocument.getAliases();
 		
 		for (Map.Entry<String, List<MonolingualTextValue>> aliasMap : aliases.entrySet()) {
@@ -148,7 +161,7 @@ public class JsonDumpProcessor implements EntityDocumentProcessor {
 		}
 	}
 	
-	private void extractDescriptions(ItemDocument itemDocument) {
+	private void extractDescriptions(TermedDocument itemDocument) {
 		Map<String, MonolingualTextValue> descriptions = itemDocument.getDescriptions();
 		
 		for (Map.Entry<String, MonolingualTextValue> description : descriptions.entrySet()) {
@@ -179,7 +192,7 @@ public class JsonDumpProcessor implements EntityDocumentProcessor {
 		}
 	}
 	
-	private void extractClaims(ItemDocument itemDocument) {
+	private void extractClaims(StatementDocument itemDocument) {
 
 		for (StatementGroup statementGroup : itemDocument.getStatementGroups()) {                  
 			String propertyId = statementGroup.getProperty().getId();                     
@@ -206,7 +219,7 @@ public class JsonDumpProcessor implements EntityDocumentProcessor {
         }
 	}
 	
-	private void insertCoordinates(ItemDocument itemDocument, String propertyId, GlobeCoordinatesValue value) {
+	private void insertCoordinates(StatementDocument itemDocument, String propertyId, GlobeCoordinatesValue value) {
 
 		try {
 			pstInsertClauseCoordinates.setString(1, itemDocument.getEntityId().getId());
@@ -221,7 +234,7 @@ public class JsonDumpProcessor implements EntityDocumentProcessor {
 		}
 	}
 	
-	private void insertDateTime(ItemDocument itemDocument, String propertyId, TimeValue value) {
+	private void insertDateTime(StatementDocument itemDocument, String propertyId, TimeValue value) {
 		try {
 			pstInsertClauseDateTime.setString(1, itemDocument.getEntityId().getId());
 			pstInsertClauseDateTime.setString(2, propertyId);
@@ -241,7 +254,7 @@ public class JsonDumpProcessor implements EntityDocumentProcessor {
 		}
 	}
 	
-	private void insertString(ItemDocument itemDocument, String propertyId, String value) {
+	private void insertString(StatementDocument itemDocument, String propertyId, String value) {
 		
 		try {
 			pstInsertClauseString.setString(1, itemDocument.getEntityId().getId());
@@ -253,7 +266,7 @@ public class JsonDumpProcessor implements EntityDocumentProcessor {
 		}
 	}
 	
-	private void insertEntity(ItemDocument itemDocument, String propertyId, String value) {
+	private void insertEntity(StatementDocument itemDocument, String propertyId, String value) {
 		
 		try {
 			pstInsertClauseEntity.setString(1, itemDocument.getEntityId().getId());
@@ -265,11 +278,6 @@ public class JsonDumpProcessor implements EntityDocumentProcessor {
 		}
 	}
 	
-	public void processPropertyDocument(PropertyDocument arg0) {
-		// TODO Auto-generated method stub
-
-	}
-
 	public static void configureLogging() {
 		// Create the appender that will write log messages to the console.
 		ConsoleAppender consoleAppender = new ConsoleAppender();
