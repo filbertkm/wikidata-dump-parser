@@ -89,7 +89,7 @@ public class JsonDumpProcessor implements EntityDocumentProcessor {
 		for (Map.Entry<String, MonolingualTextValue> description : descriptions.entrySet()) {
 			try {
 				PreparedStatement pst = this.conn.prepareStatement(query);
-				pst.setString(1, itemDocument.getEntityId().getId());
+				pst.setString(2, itemDocument.getEntityId().getId());
 				pst.setString(3, description.getValue().getLanguageCode());
 				pst.setString(4, description.getValue().getText());
 				
