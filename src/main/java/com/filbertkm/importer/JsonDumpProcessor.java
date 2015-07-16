@@ -93,22 +93,26 @@ public class JsonDumpProcessor implements EntityDocumentProcessor {
 		extractSiteLinks(itemDocument);
 		extractClaims(itemDocument);
 
-		documentCount++;
-		if (documentCount > documentBatchSize) {
-			flush();
-		}
+		flushBatch();
 	}
 
 	public void processPropertyDocument(PropertyDocument propertyDoc) {
+		String itemId = propertyDoc.getEntityId().getId();
+		logger.info("Processing: " + itemId);
+
 		extractLabels(propertyDoc);
 		extractAliases(propertyDoc);
 		extractDescriptions(propertyDoc);
 		extractClaims(propertyDoc);
 
+		flushBatch();
+	}
+	
+	private void flushBatch() {
 		documentCount++;
 		if (documentCount > documentBatchSize) {
 			flush();
-		}
+		}		
 	}
 
 	public void flush() {
